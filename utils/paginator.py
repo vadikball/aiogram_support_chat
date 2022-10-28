@@ -1,10 +1,7 @@
 
-# кэш пагинатора
-# манипулятор пагинатором
-# в манипуляторе - создание кнопок для пагинации, удаление/добавление сообщений, манипуляция списком в кэше
+
 from typing import Union, Optional, Any
 
-from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from create_bot import bot

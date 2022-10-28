@@ -1,5 +1,4 @@
 
-import traceback
 import re
 from typing import Optional, Any
 
@@ -14,10 +13,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from create_bot import bot, send_message_to_other
 from data_base.engine import (proceed_session,
-                              get_user_active,
-                              create_user,
                               change_user_admin,
-                              get_user_phone,
                               get_active_users_id,
                               get_users_filter_active,
                               get_user_with_query,
@@ -321,7 +317,6 @@ async def clear_chats(message: types.Message):
 
 def register_handlers_admin(dp: Dispatcher):
 
-    # dp.register_callback_query_handler(skip_step, Text(equals='skip_step'), state='*')
     dp.register_callback_query_handler(admin_back_to, Text(startswith='admin_back_'))
     dp.register_callback_query_handler(start_chat_resolver, Text(startswith='start_chat'))
     dp.register_callback_query_handler(paginator_resolver, Text(startswith='result'))
@@ -337,10 +332,4 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(make_mass_send, state=FSMAdminMix.mass_send)
     dp.register_message_handler(search_user, state=FSMAdminMix.search)
     dp.register_message_handler(send_message_to_user, state=FSMAdminMix.admin_dialog)
-    # dp.register_message_handler(change_phone, state=FSMChangeUser.phone_number)
-    # dp.register_message_handler(suggestion_finish, state=FSMMix.suggestion_description)
-    # dp.register_message_handler(appeal_address, state=FSMAppeal.address)
-    # dp.register_message_handler(appeal_photo, state=FSMAppeal.photo)
-    # dp.register_message_handler(appeal_description, state=FSMAppeal.description)
-    # dp.register_message_handler(renew_user_phone_for_call_back, state=FSMMix.renew_user_phone)
-    # dp.register_message_handler(send_message_to_admin, state=FSMMix.admin_dialog)
+

@@ -1,5 +1,4 @@
 
-import traceback
 import re
 from typing import Optional, Any
 
@@ -311,8 +310,6 @@ async def appeal_address(message: types.Message, state: FSMContext):
 
 async def appeal_photo(message: types.Message, state: FSMContext):
     if message.photo or message.video is not None:
-        print(message.photo)
-        print(message.video)
         async with state.proxy() as data:
             if data.get('photo') is None:
                 data['photo'] = [message.photo[0].file_id]
@@ -458,8 +455,6 @@ async def command_start(message: types.Message):
             finally:
                 await send_menu(message.from_user.id)
 
-            # print(globals()['add_name'].__annotations__)
-
 
 async def add_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -507,8 +502,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(change_phone, state=FSMChangeUser.phone_number)
     dp.register_message_handler(suggestion_finish, state=FSMMix.suggestion_description)
     dp.register_message_handler(appeal_address, state=FSMAppeal.address)
-
-    # content_types=['photo', 'video']
     dp.register_message_handler(appeal_description, state=FSMAppeal.description)
     dp.register_message_handler(renew_user_phone_for_call_back, state=FSMMix.renew_user_phone)
     dp.register_message_handler(send_message_to_admin, state=FSMMix.admin_dialog)

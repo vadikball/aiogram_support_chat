@@ -147,5 +147,4 @@ class State:
 
 def state_maker(protocol: Union[BaseStorage, JsonFileStorage] = JsonFileStorage,
                 proxy: Any = 'state.json') -> State:
-    # if issubclass(protocol, BaseStorage):
     return State(protocol(proxy))
