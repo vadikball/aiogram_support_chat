@@ -1,8 +1,5 @@
 from sqlalchemy import Column, Integer, String, BOOLEAN
 from .base import Base
-from settings import Settings
-
-settings = Settings()
 
 
 class User(Base):
