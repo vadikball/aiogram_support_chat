@@ -18,9 +18,6 @@ engine_kwargs = {
     'encoding': 'utf-8',
 }
 
-if 'postgresql' in settings.db_str:
-    engine_kwargs['poo_pre_ping'] = True
-
 Engine = create_async_engine(url=settings.db_str, **engine_kwargs)
 
 SessionMaker = sessionmaker(Engine, class_=AsyncSession)
@@ -43,6 +40,8 @@ async def proceed_schemas(
     async with engine.connect() as connection:
         connection: AsyncConnection
         await connection.run_sync(metadata.create_all)
+        await connection.commit()
+    await connection.close()
 
 
 async def create_user(session: AsyncSession, user: User):
