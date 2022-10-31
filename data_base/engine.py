@@ -1,7 +1,6 @@
 from typing import Callable, Any, Optional, Union
 
 from aiogram import types
-from aiogram.dispatcher import FSMContext
 from sqlalchemy import MetaData, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -37,10 +36,6 @@ async def proceed_session(func: Callable, **kwargs) -> Any:
     return result
 
 
-# def create_engine(url: str) -> AsyncEngine:
-#     return create_async_engine(url=url, echo=True, encoding='utf-8', poo_pre_ping=True)
-
-
 async def proceed_schemas(
         engine: AsyncEngine = Engine,
         metadata: MetaData = Base.metadata
@@ -48,10 +43,6 @@ async def proceed_schemas(
     async with engine.connect() as connection:
         connection: AsyncConnection
         await connection.run_sync(metadata.create_all)
-
-
-# def get_session_maker(engine: AsyncEngine) -> sessionmaker:
-#     return sessionmaker(engine, class_=AsyncSession)
 
 
 async def create_user(session: AsyncSession, user: User):
@@ -69,13 +60,6 @@ async def get_user_active(session: AsyncSession, user_id: int) -> Optional[bool]
 
 async def get_user_phone(session: AsyncSession, user_id: int) -> str:
     return await session.scalar(select(User.phone_number).where(User.user_id == user_id))
-
-
-# async def exist_user(session: AsyncSession, user_id: int) -> bool:
-#     user: Optional[User] = await get_user(session, user_id)
-#     if user is not None:
-#         return True
-#     return False
 
 
 async def change_user(session: AsyncSession, message: types.Message, key: str):

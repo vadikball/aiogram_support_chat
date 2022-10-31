@@ -8,6 +8,10 @@ from create_bot import bot
 
 
 class Paginator:
+    """
+    Класс для постраничного просмотра информации из бд
+
+    """
     next_button = InlineKeyboardButton('Следующая страница', callback_data='next_page')
     previous_button = InlineKeyboardButton('Предыдущая страница', callback_data='previous_page')
 
@@ -16,6 +20,13 @@ class Paginator:
                  data: Union[list, tuple],
                  back_kb: InlineKeyboardMarkup,
                  pointer: bool = True):
+        """
+        :param user_id: телеграм айди инициализатора пагинатора
+        :param data: список элементов
+        :param back_kb: кнопка с callback_data с возвращением в нужное меню
+        :param pointer: при True отправляет указатель на объект как InlineKeyboardMarkup
+        С указателем отправляет сообщения с callback_data=result#{Индекс объекта в data}
+        """
         self.user_id = user_id
         self.data = data
         self.back_kb = back_kb
@@ -25,9 +36,13 @@ class Paginator:
         self.last_message_id = None
 
     def __str__(self):
-        return 'Страница {0} из {1}'.format(
-            self.current_page, self.pages
-        ) if self.pages > 1 else '"Назад" - вернутся в предыдущее меню'
+        if self.data:
+            return 'Страница {0} из {1}'.format(
+                self.current_page, self.pages
+            ) if self.pages > 1 else '"Назад" - вернутся в предыдущее меню'
+        else:
+            return 'Нет объектов для просмотра\n' \
+                   '"Назад" - вернутся в предыдущее меню'
 
     def clear(self):
         del paginator_cash.data[self.user_id]
@@ -37,6 +52,10 @@ class Paginator:
             await bot.delete_message(self.user_id, self.last_message_id - offset)
 
     async def delete_previous_messages(self):
+        """
+        Удаляет предыдущую страницу объектов,
+        используется при переключении страницы
+        """
         if self.data:
             if self.current_page != self.pages:
                 await self.delete_helper(11)
@@ -45,6 +64,10 @@ class Paginator:
                 await self.delete_helper(message_count)
 
     async def finish(self):
+        """
+        Завершает работу пагинатора,
+        удаляет выборку объектов
+        """
         await self.delete_previous_messages()
         self.clear()
 
@@ -102,6 +125,10 @@ class Paginator:
             await self.send_keyboard(keyboard)
 
     async def send_rows(self, from_: int = 0, to_: int = 1):
+        """
+        Отправляет объекты с нужной страницы,
+        в зависимости от значения self.pointer с указателем или без
+        """
         rows = tuple(self.data[10 * from_:10 * to_])
         if self.pointer:
             indexes = tuple(self.data.index(_) for _ in rows)
@@ -118,18 +145,26 @@ class Paginator:
         self.last_message_id = mes.message_id
 
     async def start(self):
-        keyboard = InlineKeyboardMarkup()
-        if self.pages > 1:
-            keyboard.add(self.next_button)
-        keyboard.row(self.back_kb)
+        """ Отправляет первую страницу пагинатора или укзание с отсутствием объектов """
+        if self.data:
+            keyboard = InlineKeyboardMarkup()
+            if self.pages > 1:
+                keyboard.add(self.next_button)
+            keyboard.row(self.back_kb)
 
-        await self.send_rows()
+            await self.send_rows()
 
-        await self.send_keyboard(keyboard)
-        print(self.data)
+            await self.send_keyboard(keyboard)
+        else:
+            await bot.send_message(
+                self.user_id,
+                str(self),
+                reply_markup=self.back_kb
+            )
 
 
 class PaginatorCash:
+    """ Класс для кэширования в память класса Paginator """
     data = {}
 
     def get(self, chat_id: Union[str, int]) -> Optional[Paginator]:
@@ -152,12 +187,9 @@ def create_paginator(user_id: int,
                      data: Union[list, tuple],
                      back_kb: InlineKeyboardMarkup,
                      pointer: bool = True) -> Optional[Paginator]:
-    if data:
-        paginator = Paginator(user_id, data, back_kb, pointer)
-        paginator_cash.set(paginator)
-        return paginator
-    else:
-        return None
+    paginator = Paginator(user_id, data, back_kb, pointer)
+    paginator_cash.set(paginator)
+    return paginator
 
 
 async def finish_paginator(user_id: Union[str, int]):

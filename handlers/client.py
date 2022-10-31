@@ -22,10 +22,11 @@ from data_base.engine import (proceed_session,
 from data_base.models import User
 from keyboards import client_kb
 from keyboards.utils_kb import start_chat_kb
-from settings import phone_number_sequence
+from settings import phone_number_sequence, StateSettings
 from utils.state import state_maker
 
 
+state_settings = StateSettings()
 class FSMChangeUser(StatesGroup):
     name = State()
     phone_number = State()
@@ -43,6 +44,7 @@ class FSMAppeal(StatesGroup):
 
 
 class FSMMix(StatesGroup):
+    """ микс одношаговых стэйтов"""
     suggestion_description = State()
 
     renew_user_phone = State()
@@ -63,6 +65,7 @@ async def load_user_admin_chat(user_id) -> tuple[Any, str, dict]:
 
 
 async def send_request(message: types.Message, data: Optional[dict], chat: str):
+    """ Отправляет запрос в админский чат """
     user_info = (await load_user_admin_chat(message.from_user.id))[1]
     admin_chat_id = state_maker().get_key(chat)
 
@@ -106,6 +109,7 @@ async def send_request(message: types.Message, data: Optional[dict], chat: str):
 
 
 async def send_ring_up_request(user_id):
+    """ Отправляет запрос об обратном звонке в чат админов """
     main_admin_chat, user_info, _ = await load_user_admin_chat(user_id)
 
     if main_admin_chat is not None:
@@ -116,6 +120,7 @@ async def send_ring_up_request(user_id):
 
 
 async def notify_admin_chat(user_id):
+    """ Отправляет сообщение в админский чат с просьбой диалога через бота """
     main_admin_chat, user_info, _ = await load_user_admin_chat(user_id)
 
     if main_admin_chat is not None:
@@ -127,6 +132,7 @@ async def notify_admin_chat(user_id):
 
 
 async def send_menu(chat_id):
+    """ Отправляет главное меню """
     await bot.send_message(
         chat_id,
         ClientTexts.start_command_true,
@@ -135,6 +141,7 @@ async def send_menu(chat_id):
 
 
 async def request_menu(callback: types.CallbackQuery):
+    """ Отправляет меню запросов """
     await callback.message.edit_text(
         ClientTexts.request,
         reply_markup=client_kb.request_menu
@@ -142,6 +149,7 @@ async def request_menu(callback: types.CallbackQuery):
 
 
 async def contact_menu(callback: types.CallbackQuery):
+    """ Отправляет меню контакта """
     await callback.message.edit_text(
         ClientTexts.contact,
         reply_markup=client_kb.contact_menu
@@ -219,7 +227,7 @@ async def contact_resolver(callback: types.CallbackQuery, state: FSMContext):
 
 async def send_message_to_admin(message: types.Message, state: FSMContext):
     if message.text.lower().endswith('завершить диалог'):
-        admin_id = state_maker(proxy='admin_dialog.json').get_key(str(message.from_user.id))
+        admin_id = state_maker(proxy=state_settings.admin_dialog_json).get_key(str(message.from_user.id))
         user = await proceed_session(get_user, user_id=message.from_user.id)
         message_text = '{0}\n{1}\n{2}\n{3}'.format(
             user['tg_user_name'],
@@ -229,7 +237,7 @@ async def send_message_to_admin(message: types.Message, state: FSMContext):
         )
         await send_message_to_other(admin_id, message_text)
 
-        state_maker(proxy='admin_dialog.json').del_pairs(str(message.from_user.id))
+        state_maker(proxy=state_settings.admin_dialog_json).del_pairs(str(message.from_user.id))
 
         await bot.send_message(
             message.from_user.id,
@@ -239,7 +247,7 @@ async def send_message_to_admin(message: types.Message, state: FSMContext):
         await state.finish()
         await send_menu(message.from_user.id)
     else:
-        admin_id = state_maker(proxy='admin_dialog.json').get_key(str(message.from_user.id))
+        admin_id = state_maker(proxy=state_settings.admin_dialog_json).get_key(str(message.from_user.id))
         if admin_id is None:
             await state.finish()
 

@@ -40,6 +40,8 @@ class FSMAdminMix(StatesGroup):
     """
     mass_send для рассылки ообщения пользователям
     active для редактирования черного списка
+    search для поиска юзера
+    admin_dialog для отправки сообщений юзеру в диалоге с админом
     """
     mass_send = State()
 
@@ -56,6 +58,7 @@ async def get_admins(admin_chat_id) -> tuple[Any]:
 
 
 async def send_admin_menu(chat_id):
+    """ Отправляет главное меню админа """
     await bot.send_message(
         chat_id,
         AdminTexts.admin_menu,
@@ -88,7 +91,7 @@ async def admin_back_to(callback: types.CallbackQuery):
 
 
 async def start_chat_resolver(callback: types.CallbackQuery):
-    state_maker(proxy='admin_dialog.json').set_state({
+    state_maker(proxy=state_settings.admin_dialog_json).set_state({
         callback.from_user.id: int(callback.data.split('#')[1]),
         callback.data.split('#')[1]: callback.from_user.id
     })
@@ -104,9 +107,9 @@ async def start_chat_resolver(callback: types.CallbackQuery):
 
 async def send_message_to_user(message: types.Message, state: FSMContext):
     if message.text.lower().endswith('завершить диалог'):
-        user_id = state_maker(proxy='admin_dialog.json').get_key(str(message.from_user.id))
+        user_id = state_maker(proxy=state_settings.admin_dialog_json).get_key(str(message.from_user.id))
         await send_message_to_other(user_id, AdminTexts.cancel_chat_admin)
-        state_maker(proxy='admin_dialog.json').del_pairs(message.from_user.id)
+        state_maker(proxy=state_settings.admin_dialog_json).del_pairs(message.from_user.id)
 
         await bot.send_message(
             message.from_user.id,
@@ -116,13 +119,14 @@ async def send_message_to_user(message: types.Message, state: FSMContext):
         await state.finish()
 
     else:
-        user_id = state_maker(proxy='admin_dialog.json').get_key(str(message.from_user.id))
+        user_id = state_maker(proxy=state_settings.admin_dialog_json).get_key(str(message.from_user.id))
         if user_id is None:
             await state.finish()
         await send_message_to_other(user_id, message.text)
 
 
 async def paginator_stepper(callback: types.CallbackQuery):
+    """ Для переключения страниц пагинатора """
     if callback.data.startswith('next'):
         await paginator_cash.get(callback.from_user.id).next_page()
     elif callback.data.startswith('previous'):
@@ -130,6 +134,7 @@ async def paginator_stepper(callback: types.CallbackQuery):
 
 
 async def paginator_resolver(callback: types.CallbackQuery):
+    """ Для выбора объекта через пагинатора """
     paginator = paginator_cash.get(callback.from_user.id)
     user: User = paginator.get(callback.data.split('#')[1])
 
@@ -158,6 +163,11 @@ async def users_list_resolver(callback: types.CallbackQuery):
 
 
 async def search_user(message: types.Message, state: FSMContext):
+    """
+    Поиск пользователя по полям tg id, phone_number, name, tg username,
+    в зависимости от того, какую инфу прислал админ,
+    фильтр regex решает, по каким полям совершить поиск
+    """
     query = None
 
     if re.match(phone_number_sequence, message.text):
@@ -249,6 +259,7 @@ async def make_mass_send(message: types.Message, state: FSMContext):
 
 
 async def admin_menu(message: types.Message):
+    """ Главное меню админа """
     admin_chat_id = state_maker().get_key(state_settings.main_admin_chat)
     admins = await get_admins(admin_chat_id)
 
@@ -307,8 +318,9 @@ async def validate_chat(message: types.Message):
 
 
 async def clear_chats(message: types.Message):
+    """ Завершает диалог с администратором """
     await message.delete()
-    if message.chat.id == state_maker().get_key('main_admin_chat'):
+    if message.chat.id == state_maker().get_key(state_settings.main_admin_chat):
         state_maker().clear_state()
         await message.answer(
             AdminTexts.cleared_admin_chats
